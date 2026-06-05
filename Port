@@ -1,0 +1,13 @@
+eureka-server=8761
+
+config-server=8888
+
+api-gateway=8080
+
+auth-server=8081
+
+data-service=8082
+ 
+cart-service=8083
+
+payment-service=8084

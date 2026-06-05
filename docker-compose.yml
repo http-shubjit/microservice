@@ -1,0 +1,58 @@
+services:
+  eureka-server:
+    build: ./eureka-server
+    image: eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - my-microservices-network
+
+  config-server:
+    build: ./config-server
+    image: config-server:latest
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    networks:
+      - my-microservices-network
+
+  api-gateway:
+    build: ./api-gateway
+    image: api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - my-microservices-network
+    depends_on:
+      - config-server
+      - eureka-server
+
+  auth-service:
+    build: ./auth-server
+    image: auth-service:latest
+    container_name: auth-server
+    ports:
+      - "8081:8081"
+    networks:
+      - my-microservices-network
+    depends_on:
+      - config-server
+      - eureka-server
+
+  data-service:
+    build: ./data-service
+    image: data-service:latest
+    container_name: data-service
+    ports:
+      - "8082:8082"
+    networks:
+      - my-microservices-network
+    depends_on:
+      - config-server
+      - eureka-server
+
+networks:
+  my-microservices-network:
+    driver: bridge
