@@ -1,4 +1,4 @@
-package example.data.service;
+package example.data.service.dto;
 import lombok.Data;
 
 @Data

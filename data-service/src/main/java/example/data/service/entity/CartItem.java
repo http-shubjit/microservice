@@ -1,4 +1,4 @@
-package example.data.service;
+package example.data.service.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -6,10 +6,9 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "cart_items")
-@Data // Lombok: Generates Getters, Setters, toString, equals, and hashCode
-      // automatically
-@NoArgsConstructor // Lombok: Generates the empty constructor required by JPA
-@AllArgsConstructor // Lombok: Generates a constructor with all fields
+@Data 
+@NoArgsConstructor
+@AllArgsConstructor 
 public class CartItem {
 
     @Id

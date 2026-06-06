@@ -1,6 +1,8 @@
-package example.data.service;
+package example.data.service.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import example.data.service.entity.CartItem;
 
 import java.util.List;
 import java.util.Optional;

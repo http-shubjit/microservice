@@ -1,7 +1,12 @@
-package example.data.service;
+package example.data.service.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import example.data.service.dto.AddToCartRequest;
+import example.data.service.entity.CartItem;
+import example.data.service.service.CartService;
+
 import java.util.List;
 
 @RestController

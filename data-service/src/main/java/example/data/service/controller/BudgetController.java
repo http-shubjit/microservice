@@ -1,4 +1,4 @@
-package example.data.service;
+package example.data.service.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -8,6 +8,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import example.data.service.dto.BudgetRequest;
+import example.data.service.dto.Product;
+import example.data.service.entity.UserBudget;
+import example.data.service.repository.UserBudgetRepository;
+import example.data.service.service.RecommendationService;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -76,12 +83,11 @@ public class BudgetController {
                     "Great job! You are saving $%.2f this month. Keep maintaining this spending profile.", balance);
         }
 
-        // --- NEW LOGIC: Fetch recommendations based on remaining balance ---
         String recommendationText = "";
         if (balance > 0) {
-            List<String> affordableProducts = recommendationService.getAffordableProducts(balance);
-            recommendationText = "\n\nReward yourself! Here are some items you can afford with your remaining balance:\n"
-                    + String.join("\n", affordableProducts);
+            List<Product> affordableProducts = recommendationService.getAffordableProducts(balance);
+            recommendationText = "Here are some items you can afford with your remaining balance: "
+                            + affordableProducts;
         }
 
         String userResponse = String.format(

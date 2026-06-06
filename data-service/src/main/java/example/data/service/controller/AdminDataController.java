@@ -1,4 +1,4 @@
-package example.data.service;
+package example.data.service.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -6,6 +6,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import example.data.service.entity.UserBudget;
+import example.data.service.repository.UserBudgetRepository;
+
 import java.util.List;
 
 @RestController

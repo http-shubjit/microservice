@@ -1,4 +1,4 @@
-package example.data.service;
+package example.data.service.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
