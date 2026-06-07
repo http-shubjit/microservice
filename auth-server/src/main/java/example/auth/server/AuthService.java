@@ -24,7 +24,6 @@ public class AuthService {
         User.Role assignedRole = User.Role.GUEST;
         if (request.getRole() != null && !request.getRole().trim().isEmpty()) {
             try {
-                // Safely maps strings like "Manager" or "manager" to the MANAGER enum
                 assignedRole = User.Role.valueOf(request.getRole().trim().toUpperCase());
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Invalid role specified");

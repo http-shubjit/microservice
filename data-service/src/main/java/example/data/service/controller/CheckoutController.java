@@ -1,8 +1,10 @@
 package example.data.service.controller;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import example.data.service.dto.CheckoutInitiateRequest;
 import example.data.service.dto.PaymentVerificationRequest;
 import example.data.service.service.CheckoutService;
 
@@ -16,12 +18,16 @@ public class CheckoutController {
     private CheckoutService checkoutService;
 
     /**
-     * 1. Initiates the checkout. Returns the Order ID to the frontend.
+     * 1. Initiates the checkout. Accepts selected item IDs and returns the Order
+     * ID.
      */
     @PostMapping("/initiate")
-    public ResponseEntity<?> initiateCheckout(@RequestHeader("X-User-Email") String email) {
+    public ResponseEntity<?> initiateCheckout(
+            @RequestHeader("X-User-Email") String email,
+            @RequestBody CheckoutInitiateRequest request) { // Added RequestBody
         try {
-            String razorpayOrderId = checkoutService.createRazorpayOrder(email);
+            // Pass the selected IDs to the service
+            String razorpayOrderId = checkoutService.createRazorpayOrder(email, request.getCartItemIds());
             return ResponseEntity.ok(Map.of("razorpayOrderId", razorpayOrderId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to initiate checkout: " + e.getMessage());
@@ -29,7 +35,7 @@ public class CheckoutController {
     }
 
     /**
-     * 2. The frontend sends the success tokens here after the popup closes.
+     * 2. Verifies the payment and deletes the purchased items.
      */
     @PostMapping("/verify")
     public ResponseEntity<String> verifyPayment(
@@ -41,7 +47,9 @@ public class CheckoutController {
                 request.getRazorpayOrderId(),
                 request.getRazorpayPaymentId(),
                 request.getRazorpaySignature(),
-                request.getAmountPaid());
+                request.getAmountPaid(),
+                request.getCartItemIds() // Pass the IDs to delete
+        );
 
         if (isSuccessful) {
             return ResponseEntity.ok("Payment successful! Your budget has been updated.");

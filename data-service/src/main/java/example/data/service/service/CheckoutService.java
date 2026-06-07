@@ -6,12 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 1. FIXED: Correct Razorpay Utils import
 import com.razorpay.RazorpayClient;
 import com.razorpay.Utils;
 
 import example.data.service.entity.CartItem;
-import example.data.service.entity.Order; // Your Database Order
+import example.data.service.entity.Order;
 import example.data.service.entity.UserBudget;
 import example.data.service.repository.CartItemRepository;
 import example.data.service.repository.OrderRepository;
@@ -39,18 +38,28 @@ public class CheckoutService {
     private String keySecret;
 
     /**
-     * Phase 1: Create a Razorpay Order
+     * Phase 1: Create a Razorpay Order for SPECIFIC cart items
      */
-    public String createRazorpayOrder(String email) throws Exception {
-        List<CartItem> cart = cartRepository.findByUserEmail(email);
+    public String createRazorpayOrder(String email, List<Long> selectedCartItemIds) throws Exception {
 
-        if (cart.isEmpty()) {
-            throw new RuntimeException("Your cart is empty!");
+        if (selectedCartItemIds == null || selectedCartItemIds.isEmpty()) {
+            throw new RuntimeException("No items selected for checkout.");
         }
 
-        // Calculate total. Razorpay expects amounts in PAISE (1 INR = 100 Paise)
+        // 1. Fetch ONLY the items the user selected using standard JPA findAllById
+        List<CartItem> selectedItems = cartRepository.findAllById(selectedCartItemIds);
+
+        if (selectedItems.isEmpty()) {
+            throw new RuntimeException("Selected items could not be found.");
+        }
+
+        // Calculate total for ONLY selected items
         long totalInPaise = 0;
-        for (CartItem item : cart) {
+        for (CartItem item : selectedItems) {
+            // Security Check: Ensure the requested item actually belongs to this user
+            if (!item.getUserEmail().equalsIgnoreCase(email)) {
+                throw new RuntimeException("Unauthorized attempt to purchase items belonging to another user.");
+            }
             totalInPaise += (long) (item.getPrice() * item.getQuantity() * 100);
         }
 
@@ -63,22 +72,20 @@ public class CheckoutService {
         orderRequest.put("currency", "INR");
         orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
 
-        // 2. FIXED: Explicitly tell Java this is a Razorpay Order, not your Database
-        // Order
+        // Generate Razorpay Order
         com.razorpay.Order razorpayOrder = razorpay.orders.create(orderRequest);
 
-        // Return the unique Razorpay Order ID (e.g., "order_EKwxw...")
         return razorpayOrder.get("id");
     }
 
     /**
-     * Phase 2: Verify the payment signature and fulfill the order
+     * Phase 2: Verify payment and fulfill ONLY the purchased items
      */
     @Transactional
     public boolean verifyAndFulfill(String email, String orderId, String paymentId, String signature,
-            double actualAmount) {
+            double actualAmount, List<Long> purchasedCartItemIds) {
         try {
-            // Verify the signature to ensure the request actually came from Razorpay
+            // Verify signature
             JSONObject options = new JSONObject();
             options.put("razorpay_order_id", orderId);
             options.put("razorpay_payment_id", paymentId);
@@ -87,16 +94,19 @@ public class CheckoutService {
             boolean isValid = Utils.verifyPaymentSignature(options, keySecret);
 
             if (isValid) {
-                // 3. FIXED: Just use "Order" since your database entity is imported at the top
+                // Create permanent Order record
                 Order newOrder = Order.builder()
                         .userEmail(email)
                         .totalAmount(actualAmount)
                         .status("PAID")
-                        .build();  
+                        .build();
 
                 orderRepository.save(newOrder);
-                // Clear the User's Cart
-                cartRepository.deleteByUserEmail(email);
+
+                // 2. Clear ONLY the specific items that were successfully purchased
+                if (purchasedCartItemIds != null && !purchasedCartItemIds.isEmpty()) {
+                    cartRepository.deleteAllById(purchasedCartItemIds);
+                }
 
                 // Update their Budget
                 Optional<UserBudget> userBudget = budgetRepository.findByEmail(email);
