@@ -1,23 +1,20 @@
 package example.data.service.service;
 
+import com.razorpay.RazorpayClient;
+import com.razorpay.Utils;
+import example.data.service.entity.CartItem;
+import example.data.service.entity.Order;
+import example.data.service.entity.OrderItem;
+import example.data.service.repository.CartItemRepository;
+import example.data.service.repository.OrderRepository;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.razorpay.RazorpayClient;
-import com.razorpay.Utils;
-
-import example.data.service.entity.CartItem;
-import example.data.service.entity.Order;
-import example.data.service.entity.UserBudget;
-import example.data.service.repository.CartItemRepository;
-import example.data.service.repository.OrderRepository;
-import example.data.service.repository.UserBudgetRepository;
-
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CheckoutService {
@@ -28,36 +25,30 @@ public class CheckoutService {
     @Autowired
     private OrderRepository orderRepository;
 
-    @Autowired
-    private UserBudgetRepository budgetRepository;
-
     @Value("${razorpay.key.id}")
     private String keyId;
 
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
-    /**
-     * Phase 1: Create Razorpay Order AND save a PENDING order in our DB
-     */
     @Transactional
-    public String createRazorpayOrder(String email, List<CartItem> selectedCartItemIds) throws Exception {
+    public String createRazorpayOrder(String email, List<CartItem> selectedCartItems) throws Exception {
+        if (selectedCartItems == null || selectedCartItems.isEmpty()) {
+            throw new RuntimeException("No items selected.");
+        }
+
         long totalInPaise = 0;
         double totalInRupees = 0;
 
-        if (selectedCartItemIds == null || selectedCartItemIds.size() <= 0) {
-            throw new RuntimeException("No items selected.");
-
-        }
-        else {
-            for (CartItem item : selectedCartItemIds) {
-                if (!item.getUserEmail().equalsIgnoreCase(email)) {
-                    throw new RuntimeException("Unauthorized cart item.");
-                }
-                totalInPaise += (long) (item.getPrice() * item.getQuantity() * 100);
-                totalInRupees += (item.getPrice() * item.getQuantity());
+        for (CartItem item : selectedCartItems) {
+            if (!item.getUserEmail().equalsIgnoreCase(email)) {
+                throw new RuntimeException("Unauthorized cart item.");
             }
-}
+            totalInPaise += (long) (item.getPrice() * item.getQuantity() * 100);
+            totalInRupees += (item.getPrice() * item.getQuantity());
+        }
+
+        // Create Razorpay Order
         RazorpayClient razorpay = new RazorpayClient(keyId, keySecret);
         JSONObject orderRequest = new JSONObject();
         orderRequest.put("amount", totalInPaise);
@@ -65,23 +56,37 @@ public class CheckoutService {
         orderRequest.put("receipt", "txn_" + System.currentTimeMillis());
         com.razorpay.Order razorpayOrder = razorpay.orders.create(orderRequest);
         String rzpOrderId = razorpayOrder.get("id");
-        System.out.println("razorpayOrder" + razorpayOrder);
-        System.out.println("rzpOrderId"+rzpOrderId);
-    // CREATE PENDING ORDER RECORD IMMEDIATELY
+
+        // 1. Create Parent Order object
         Order pendingOrder = Order.builder()
                 .userEmail(email)
                 .totalAmount(totalInRupees)
-                .status("PENDING") // Marked as pending
+                .status("PENDING")
                 .razorpayOrderId(rzpOrderId)
                 .build();
+
+        // 2. Map the 3 CartItems into 3 OrderItems
+        List<OrderItem> orderItems = selectedCartItems.stream().map(cartItem -> {
+            OrderItem orderItem = OrderItem.builder()
+                    .productId(cartItem.getProductId()) // Maps your variables
+                    .productTitle(cartItem.getProductTitle())
+                    .price(cartItem.getPrice())
+                    .quantity(cartItem.getQuantity())
+                    .order(pendingOrder) // <--- CRITICAL: Passes the parent reference to the child item
+                    .build();
+            return orderItem;
+        }).collect(Collectors.toList());
+
+        // 3. Set the virtual list in the parent
+        pendingOrder.setItems(orderItems);
+
+        // 4. Save parent order. Java saves the order, gets the order_id,
+        // and injects it into all 3 order_items records automatically!
         orderRepository.save(pendingOrder);
 
         return rzpOrderId;
     }
 
-    /**
-     * Phase 2: Verify payment and update status from PENDING to PAID
-     */
     @Transactional
     public boolean verifyAndFulfill(String email, String orderId, String paymentId, String signature) {
         try {
@@ -93,37 +98,24 @@ public class CheckoutService {
             boolean isValid = Utils.verifyPaymentSignature(options, keySecret);
 
             if (isValid) {
+                // 1. Fetch the order by its Razorpay ID
                 Order existingOrder = orderRepository.findByRazorpayOrderId(orderId)
                         .orElseThrow(() -> new RuntimeException("Order record not found"));
+
                 existingOrder.setStatus("PAID");
                 orderRepository.save(existingOrder);
 
-                // Clear purchased items from cart
-               // cartRepository.deleteAllById(purchasedCartItemIds);
-
-                // Update budget
-                Optional<UserBudget> userBudget = budgetRepository.findByEmail(email);
-                if (userBudget.isPresent()) {
-                    UserBudget budget = userBudget.get();
-                    budget.setMonthlyExpense(budget.getMonthlyExpense() + existingOrder.getTotalAmount());
-                    budgetRepository.save(budget);
+                // 2. Clear out the items from the cart since they are paid for
+                // Loop through the 3 items stored in our Order history memory
+                for (OrderItem item : existingOrder.getItems()) {
+                    cartRepository.deleteByUserEmailAndProductId(email, item.getProductId());
                 }
+
                 return true;
             }
             return false;
         } catch (Exception e) {
             return false;
         }
-    }
-
-    /**
-     * Phase 3: Explicitly mark an order as FAILED if payment drops
-     */
-    @Transactional
-    public void markOrderAsFailed(String orderId) {
-        orderRepository.findByRazorpayOrderId(orderId).ifPresent(order -> {
-            order.setStatus("FAILED");
-            orderRepository.save(order);
-        });
     }
 }

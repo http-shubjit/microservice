@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserBudget {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

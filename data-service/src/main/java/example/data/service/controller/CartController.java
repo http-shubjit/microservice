@@ -28,7 +28,8 @@ public class CartController {
                 email,
                 payload.getProductId(),
                 payload.getProductTitle(),
-                payload.getPrice());
+                payload.getPrice(),
+                payload.getQuantity());
 
         return ResponseEntity.ok("Product successfully added to your cart!");
     }
@@ -38,4 +39,14 @@ public class CartController {
         List<CartItem> cart = cartService.getCartContents(email);
         return ResponseEntity.ok(cart);
     }
+
+    @DeleteMapping("/remove/{productId}")
+    public ResponseEntity<String> removeItemFromCart(
+            @Parameter(hidden = true) @RequestHeader("X-User-Email") String email,
+            @PathVariable int productId) {
+
+        cartService.removeFromCart(email, productId);
+        return ResponseEntity.ok("Product successfully removed from your cart!");
+    }
+
 }

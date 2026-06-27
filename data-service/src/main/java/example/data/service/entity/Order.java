@@ -3,6 +3,7 @@ package example.data.service.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "user_orders")
@@ -14,6 +15,7 @@ public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "order_id")
     private Long id;
 
     @Column(nullable = false)
@@ -26,8 +28,11 @@ public class Order {
     private String status; // Now can be: "PENDING", "PAID", or "FAILED"
 
     @Column(unique = true)
-    private String razorpayOrderId; // Added to map DB record to Razorpay's system
+    private String razorpayOrderId;  
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items;
 }

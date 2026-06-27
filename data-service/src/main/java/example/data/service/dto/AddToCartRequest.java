@@ -6,4 +6,6 @@ public class AddToCartRequest {
     private int productId;
     private String productTitle;
     private double price;
+    private int quantity; 
 }
+

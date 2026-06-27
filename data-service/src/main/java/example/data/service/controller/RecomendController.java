@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import example.data.service.dto.BudgetRequest;
 import example.data.service.dto.Product;
-import example.data.service.entity.UserBudget;
+import example.data.service.entity.User;
 import example.data.service.repository.UserBudgetRepository;
 import example.data.service.service.RecommendationService;
 
@@ -40,8 +40,8 @@ public class RecomendController {
             @Parameter(hidden = true) @RequestHeader("X-User-Role") String role,
             @RequestBody BudgetRequest request) {
 
-        UserBudget budget;
-        Optional<UserBudget> existingUser = budgetRepository.findByEmail(email);
+        User budget;
+        Optional<User> existingUser = budgetRepository.findByEmail(email);
 
         if (existingUser.isPresent()) {
             budget = existingUser.get();
@@ -49,7 +49,7 @@ public class RecomendController {
             budget.setMonthlyExpense(request.getMonthlyExpense());
             budget.setRole(role);
         } else {
-            budget = new UserBudget(null, email, role, request.getMonthlyIncome(), request.getMonthlyExpense());
+            budget = new User(null, email, role, request.getMonthlyIncome(), request.getMonthlyExpense());
         }
 
         budgetRepository.save(budget);

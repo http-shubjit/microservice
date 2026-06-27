@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import example.data.service.entity.UserBudget;
+import example.data.service.entity.User;
 import example.data.service.repository.UserBudgetRepository;
 
 import java.util.List;
@@ -30,8 +30,8 @@ public class AdminDataController {
 
     @GetMapping("/users/all")
     @Operation(summary = "Fetch total user details", description = "Retrieves complete budget profiles of all registered users from H2.")
-    public ResponseEntity<List<UserBudget>> getAllUserDetails() {
-        List<UserBudget> allUsers = budgetRepository.findAll();
+    public ResponseEntity<List<User>> getAllUserDetails() {
+        List<User> allUsers = budgetRepository.findAll();
         return ResponseEntity.ok(allUsers);
     }
     

@@ -1,20 +1,16 @@
 package example.data.service.controller;
 
+import example.data.service.entity.CartItem; // Assuming this is your CartItem entity package
+import example.data.service.dto.PaymentVerificationRequest;
+import example.data.service.service.CheckoutService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-
-import example.data.service.dto.CheckoutInitiateRequest;
-import example.data.service.dto.PaymentVerificationRequest;
-import example.data.service.entity.CartItem;
-import example.data.service.service.CheckoutService;
-
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/checkout")
+@RequestMapping("/api/checkout")
 public class CheckoutController {
 
     @Autowired
@@ -41,22 +37,12 @@ public class CheckoutController {
                 email,
                 request.getRazorpayOrderId(),
                 request.getRazorpayPaymentId(),
-                request.getRazorpaySignature()
-                    );
+                request.getRazorpaySignature());
 
         if (isSuccessful) {
-            return ResponseEntity.ok("Payment successful!");
+            return ResponseEntity.ok("Payment successful and cart cleared!");
         } else {
             return ResponseEntity.status(400).body("Payment verification failed.");
         }
-    }
-
-    /**
-     * NEW ENDPOINT: Called by frontend if user closes popup or payment fails
-     */
-    @PostMapping("/fail")
-    public ResponseEntity<String> failPayment(@RequestParam String razorpayOrderId) {
-        checkoutService.markOrderAsFailed(razorpayOrderId);
-        return ResponseEntity.ok("Order status updated to FAILED.");
     }
 }
