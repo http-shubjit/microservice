@@ -17,12 +17,12 @@ public class CartService {
     @Autowired
     private CartItemRepository cartRepository;
 
-    public CartItem addToCart(String email, String productId, String title, double price) {
+    public CartItem addToCart(String email, int productId, String title, double price) {
         Optional<CartItem> existingItem = cartRepository.findByUserEmailAndProductId(email, productId);
 
         if (existingItem.isPresent()) {
             CartItem item = existingItem.get();
-            item.setQuantity(item.getQuantity() + 1);
+            item.setQuantity(item.getQuantity() + 1); 
             return cartRepository.save(item);
         } else {
             CartItem newItem = new CartItem(null, email, productId, title, price, 1);

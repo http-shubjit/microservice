@@ -38,7 +38,6 @@ public class User {
     }
 
     public enum Role {
-        GUEST,
         USER,
         SYSTEM_ADMINISTRATOR,
     }

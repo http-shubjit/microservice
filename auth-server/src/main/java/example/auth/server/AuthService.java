@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Map;
+import java.time.Duration;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -14,20 +16,30 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public Map<String, Object> register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email is already registered");
         }
 
-        // Default to GUEST if no role is provided
-        User.Role assignedRole = User.Role.GUEST;
-        if (request.getRole() != null && !request.getRole().trim().isEmpty()) {
+        // Default to USER if no role is provided
+        User.Role assignedRole = User.Role.USER; // Default fallback
+
+        String inputRole = request.getRole();
+
+        // 1. Check if the input is actually provided and is not the Swagger placeholder
+        // "string"
+        if (inputRole != null && !inputRole.trim().isEmpty() && !inputRole.equalsIgnoreCase("string")) {
             try {
-                assignedRole = User.Role.valueOf(request.getRole().trim().toUpperCase());
+                assignedRole = User.Role.valueOf(inputRole.trim().toUpperCase());
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Invalid role specified");
+                assignedRole = User.Role.USER; // Fallback if typo/invalid string is sent
             }
+        } else {
+          
+        System.out.println("Swagger placeholder detected. Defaulting to USER.");
+          assignedRole = User.Role.USER;
         }
 
         User user = User.builder()
@@ -55,13 +67,32 @@ public class AuthService {
         return buildResponse(user);
     }
 
+    public void logout(String token) {
+
+        String jti = jwtUtil.extractJti(token);
+
+        Date expiration = jwtUtil.extractExpiration(token);
+
+        long remainingTime = expiration.getTime()
+                - System.currentTimeMillis();
+
+        if (remainingTime <= 0) {
+            return;
+        }
+
+        tokenBlacklistService.blacklistToken(
+                jti,
+                Duration.ofMillis(remainingTime));
+
+        log.info("Token revoked successfully");
+    }
     private Map<String, Object> buildResponse(User user) {
         return Map.of(
                 "token", jwtUtil.generateToken(user),
                 "userId", user.getId(),
                 "email", user.getEmail(),
                 "fullName", user.getFullname(),
-                "role", user.getRole().name() 
-        );
+                "role", user.getRole().name());
     }
+    
 }

@@ -1,4 +1,4 @@
-package example.auth.server;
+ package example.auth.server;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

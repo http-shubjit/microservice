@@ -48,6 +48,26 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<AuthResponse<?>> logout(
+            @RequestHeader("Authorization") String authorizationHeader) {
+
+        if (!authorizationHeader.startsWith("Bearer ")) {
+
+            return ResponseEntity.badRequest()
+                    .body(
+                            AuthResponse.error(
+                                    "Invalid Authorization Header"));
+        }
+
+        String token = authorizationHeader.substring(7);
+
+        authService.logout(token);
+
+        return ResponseEntity.ok(
+                AuthResponse.success(
+                        "Logout successful"));
+    }
     @SecurityRequirements
     @Operation(summary = "Health check")
     @GetMapping("/health")

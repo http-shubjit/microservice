@@ -15,7 +15,7 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     // 2. Check if a user already has a specific product in their cart (to increase
     // quantity instead of creating a duplicate)
-    Optional<CartItem> findByUserEmailAndProductId(String userEmail, String productId);
+    Optional<CartItem> findByUserEmailAndProductId(String userEmail, int productId);
 
     // 3. Clear the user's cart completely (crucial to run after a successful
     // checkout)

@@ -4,10 +4,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import example.data.service.dto.CheckoutInitiateRequest;
 import example.data.service.dto.PaymentVerificationRequest;
+import example.data.service.entity.CartItem;
 import example.data.service.service.CheckoutService;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,26 +20,18 @@ public class CheckoutController {
     @Autowired
     private CheckoutService checkoutService;
 
-    /**
-     * 1. Initiates the checkout. Accepts selected item IDs and returns the Order
-     * ID.
-     */
     @PostMapping("/initiate")
     public ResponseEntity<?> initiateCheckout(
             @RequestHeader("X-User-Email") String email,
-            @RequestBody CheckoutInitiateRequest request) { // Added RequestBody
+            @RequestBody List<CartItem> request) {
         try {
-            // Pass the selected IDs to the service
-            String razorpayOrderId = checkoutService.createRazorpayOrder(email, request.getCartItemIds());
+            String razorpayOrderId = checkoutService.createRazorpayOrder(email, request);
             return ResponseEntity.ok(Map.of("razorpayOrderId", razorpayOrderId));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("Failed to initiate checkout: " + e.getMessage());
         }
     }
 
-    /**
-     * 2. Verifies the payment and deletes the purchased items.
-     */
     @PostMapping("/verify")
     public ResponseEntity<String> verifyPayment(
             @RequestHeader("X-User-Email") String email,
@@ -46,15 +41,22 @@ public class CheckoutController {
                 email,
                 request.getRazorpayOrderId(),
                 request.getRazorpayPaymentId(),
-                request.getRazorpaySignature(),
-                request.getAmountPaid(),
-                request.getCartItemIds() // Pass the IDs to delete
-        );
+                request.getRazorpaySignature()
+                    );
 
         if (isSuccessful) {
-            return ResponseEntity.ok("Payment successful! Your budget has been updated.");
+            return ResponseEntity.ok("Payment successful!");
         } else {
-            return ResponseEntity.status(400).body("Payment signature verification failed. Potential fraud detected.");
+            return ResponseEntity.status(400).body("Payment verification failed.");
         }
+    }
+
+    /**
+     * NEW ENDPOINT: Called by frontend if user closes popup or payment fails
+     */
+    @PostMapping("/fail")
+    public ResponseEntity<String> failPayment(@RequestParam String razorpayOrderId) {
+        checkoutService.markOrderAsFailed(razorpayOrderId);
+        return ResponseEntity.ok("Order status updated to FAILED.");
     }
 }

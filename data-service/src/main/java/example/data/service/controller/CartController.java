@@ -3,9 +3,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+
 import example.data.service.dto.AddToCartRequest;
+import example.data.service.dto.Product;
 import example.data.service.entity.CartItem;
 import example.data.service.service.CartService;
+import io.swagger.v3.oas.annotations.Parameter;
 
 import java.util.List;
 
@@ -18,7 +21,7 @@ public class CartController {
 
     @PostMapping("/add")
     public ResponseEntity<String> addItemToCart(
-            @RequestHeader("X-User-Email") String email,
+            @Parameter(hidden = true) @RequestHeader("X-User-Email") String email,
             @RequestBody AddToCartRequest payload) {
 
         cartService.addToCart(

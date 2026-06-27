@@ -1,11 +1,16 @@
 package example.data.service.repository;
 
-
+import example.data.service.entity.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import example.data.service.entity.Order;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
+
+    List<Order> findByUserEmailOrderByCreatedAtDesc(String userEmail);
+
+    Optional<Order> findByRazorpayOrderId(String razorpayOrderId);
 }

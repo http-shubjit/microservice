@@ -19,7 +19,7 @@ public class CartItem {
     private String userEmail;
 
     @Column(name = "product_id", nullable = false)
-    private String productId;
+    private int productId;
 
     @Column(name = "product_title", nullable = false)
     private String productTitle;
@@ -29,4 +29,5 @@ public class CartItem {
 
     @Column(name = "quantity", nullable = false)
     private int quantity;
+    
 }

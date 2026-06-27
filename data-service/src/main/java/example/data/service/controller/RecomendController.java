@@ -21,7 +21,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/v1")
 @Tag(name = "Shared Budget API", description = "Endpoints accessible by both authenticated Users and Admins.")
-public class BudgetController {
+public class RecomendController {
 
     @Autowired
     private UserBudgetRepository budgetRepository;
@@ -35,7 +35,7 @@ public class BudgetController {
             @ApiResponse(responseCode = "400", description = "Invalid request payload supplied."),
             @ApiResponse(responseCode = "403", description = "Gateway authorization failure.")
     })
-    public ResponseEntity<String> submitData(
+    public ResponseEntity<List<Product>> submitData(
             @Parameter(hidden = true) @RequestHeader("X-User-Email") String email,
             @Parameter(hidden = true) @RequestHeader("X-User-Role") String role,
             @RequestBody BudgetRequest request) {
@@ -58,13 +58,13 @@ public class BudgetController {
         double expense = budget.getMonthlyExpense();
         double balance = income - expense;
 
-        if ("SYSTEM_ADMINISTRATOR".equalsIgnoreCase(role)) {
-            String adminResponse = String.format(
-                    "Admin Data processed for %s.\n" +
-                            "Current Status: Income: $%.2f | Expenses: $%.2f | Net Balance: $%.2f",
-                    email, income, expense, balance);
-            return ResponseEntity.ok(adminResponse);
-        }
+        // if ("SYSTEM_ADMINISTRATOR".equalsIgnoreCase(role)) {
+        //     String adminResponse = String.format(
+        //             "Admin Data processed for %s.\n" +
+        //                     "Current Status: Income: $%.2f | Expenses: $%.2f | Net Balance: $%.2f",
+        //             email, income, expense, balance);
+        //     return ResponseEntity.ok(adminResponse);
+        // }
 
         double idealMaxExpense = income * 0.70;
         String advice;
@@ -82,20 +82,14 @@ public class BudgetController {
             advice = String.format(
                     "Great job! You are saving $%.2f this month. Keep maintaining this spending profile.", balance);
         }
-
-        String recommendationText = "";
+        List<Product> affordableProducts = null;
         if (balance > 0) {
-            List<Product> affordableProducts = recommendationService.getAffordableProducts(balance);
-            recommendationText = "Here are some items you can afford with your remaining balance: "
-                            + affordableProducts;
+             affordableProducts = recommendationService.getAffordableProducts(balance);
+           
         }
 
-        String userResponse = String.format(
-                "Data processed for %s (Role: %s).\n" +
-                        "Current Status: Income: $%.2f | Expenses: $%.2f\n" +
-                        "Budget Recommendation: %s%s",
-                email, role, income, expense, advice, recommendationText);
+      System.out.println("affordableProducts"+ affordableProducts);
 
-        return ResponseEntity.ok(userResponse);
+        return ResponseEntity.ok(affordableProducts);
     }
 }

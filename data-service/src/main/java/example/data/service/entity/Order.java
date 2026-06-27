@@ -1,10 +1,7 @@
 package example.data.service.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder; // Import this!
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -12,17 +9,25 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder 
+@Builder
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String userEmail;
-    private double totalAmount;
-    private String status;
 
-    @Builder.Default // Tells Lombok to keep this default value when building
+    @Column(nullable = false)
+    private double totalAmount;
+
+    @Column(nullable = false)
+    private String status; // Now can be: "PENDING", "PAID", or "FAILED"
+
+    @Column(unique = true)
+    private String razorpayOrderId; // Added to map DB record to Razorpay's system
+
+    @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 }

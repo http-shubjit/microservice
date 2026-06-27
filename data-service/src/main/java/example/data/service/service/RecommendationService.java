@@ -3,8 +3,8 @@ package example.data.service.service;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import example.data.service.dto.JsonResponse;
 import example.data.service.dto.Product;
+import example.data.service.dto.ProductResponse;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,10 +25,10 @@ public class RecommendationService {
             return Collections.emptyList();
         }
 
-        String apiUrl = "https://dummyjson.com/products?limit=50";
+        String apiUrl = "https://dummyjson.com/products?limit=5";
 
         try {
-            JsonResponse response = restTemplate.getForObject(apiUrl, JsonResponse.class);
+            ProductResponse response = restTemplate.getForObject(apiUrl, ProductResponse.class);
 
             if (response != null && response.getProducts() != null) {
                 // 2. Stream, filter by price, and return full Product objects

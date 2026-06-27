@@ -8,6 +8,3 @@ auth-server=8081
 
 data-service=8082
  
-cart-service=8083
-
-payment-service=8084

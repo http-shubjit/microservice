@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Razorpay Test Sandbox</title>
+
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #f8f9fa;
+            margin: 0;
+        }
+
+        .box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #3399cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 90%;
+            font-size: 15px;
+        }
+
+        button:hover {
+            background: #287ca7;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+
+    <h3>Razorpay Payment Sandbox</h3>
+
+    <p>Paste the Razorpay Order ID:</p>
+
+    <input
+        type="text"
+        id="orderId"
+        placeholder="order_xxxxxxxxxxxxxx">
+<input
+    type="email"
+    id="email"
+    placeholder="Enter your email">
+    <button id="pay-btn">  <br><br>
+        Open Payment Window
+    </button>
+
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+
+document.getElementById("pay-btn").onclick = function (e) {
+
+    e.preventDefault();
+
+    const orderId = document.getElementById("orderId").value.trim();
+const email = document.getElementById("email").value;
+
+    if (!orderId) {
+        alert("Please enter Razorpay Order ID");
+        return;
+    }
+
+    const options = {
+
+        key: "rzp_test_SyKFOG7Dsvus9g",
+
+        order_id: orderId,
+
+        currency: "INR",
+
+        name: "Data Service Sandbox",
+
+        description: "Checkout Test",
+
+        prefill: {
+            name: "Test User",
+            email: "testuser@gmail.com",
+            contact: "9999999999"
+        },
+
+        theme: {
+            color: "#3399cc"
+        },
+
+        handler: function (response) {
+
+            fetch("http://localhost:8080/api/v1/checkout/verify", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json",
+
+                    // MUST MATCH THE EMAIL USED DURING /initiate
+                    "X-User-Email": email
+                },
+
+                body: JSON.stringify({
+
+                    razorpayOrderId: response.razorpay_order_id,
+
+                    razorpayPaymentId: response.razorpay_payment_id,
+
+                    razorpaySignature: response.razorpay_signature
+
+                })
+
+            })
+            .then(response => {
+
+                if (!response.ok) {
+                    throw new Error("Verification failed");
+                }
+
+                return response.text();
+
+            })
+            .then(result => {
+
+                alert(result);
+
+            })
+            .catch(error => {
+
+                console.error(error);
+
+                alert(error.message);
+
+            });
+
+        },
+
+        modal: {
+
+            ondismiss: function () {
+
+                fetch(
+                    "http://localhost:8080/api/v1/checkout/fail?razorpayOrderId=" + orderId,
+                    {
+                        method: "POST"
+                    }
+                )
+                .then(() => {
+
+                    alert("Payment cancelled.");
+
+                });
+
+            }
+
+        }
+
+    };
+
+    const razorpay = new Razorpay(options);
+
+    razorpay.open();
+
+};
+
+</script>
+
+</body>
+</html>

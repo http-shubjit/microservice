@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 
 @Component
+
 public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> {
 
         @Value("${app.jwt.secret}")
@@ -28,15 +29,17 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
 
         private Key signingKey;
 
-        public AuthFilter() {
-                super(Config.class);
-        }
+        private final TokenBlacklistService tokenBlacklistService;
 
-        /**
-         * Convert secret string into secure signing key
-         */
+        public AuthFilter(TokenBlacklistService tokenBlacklistService) {
+
+                super(Config.class);
+
+                this.tokenBlacklistService = tokenBlacklistService;
+        }
         @PostConstruct
         public void init() {
+
                 this.signingKey = Keys.hmacShaKeyFor(
                                 jwtSecret.getBytes(StandardCharsets.UTF_8));
         }
@@ -45,70 +48,68 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
         public GatewayFilter apply(Config config) {
 
                 return (exchange, chain) -> {
- // Step 1: Get Authorization header
-                         String authHeader = exchange.getRequest()
-                                        .getHeaders()
-                                        .getFirst(HttpHeaders.AUTHORIZATION);
 
-                        // Step 2: Check if header exists
-                        if (!StringUtils.hasText(authHeader)) {
+                        String token = extractToken(exchange);
+
+                        if (token == null) {
+
                                 return sendError(
                                                 exchange,
-                                                "Authorization header is missing",
+                                                "Authorization header is missing or invalid",
                                                 HttpStatus.UNAUTHORIZED);
                         }
-
-                        // Step 3: Check Bearer token format
-                        if (!authHeader.startsWith("Bearer ")) {
-                                return sendError(
-                                                exchange,
-                                                "Invalid token format",
-                                                HttpStatus.UNAUTHORIZED);
-                        }
-
-                        // Step 4: Extract token
-                        String token = authHeader.substring(7);
 
                         try {
 
-                                // Step 5: Validate token
-                                Claims claims = Jwts.parserBuilder()
-                                                .setSigningKey(signingKey)
-                                                .build()
-                                                .parseClaimsJws(token)
-                                                .getBody();
+                                Claims claims = validateAndExtractClaims(token);
 
-                                // Step 6: Extract user data from token
                                 String email = claims.get("email", String.class);
+
                                 String role = claims.get("role", String.class);
 
-                                // Step 7: Check role access
-                                String requiredRole = config.getRequiredRole();
+                                String jti = claims.getId();
 
-                                if (requiredRole != null && !requiredRole.isEmpty()) {
+                                // ==================================================
+                                // BLACKLIST CHECK
+                                // ==================================================
 
-                                        if (!hasPermission(role, requiredRole)) {
+                                if (tokenBlacklistService.isBlacklisted(jti)) {
 
-                                                return sendError(
-                                                                exchange,
-                                                                "Access DenIED",
-                                                                HttpStatus.FORBIDDEN);
-                                        }
+                                        return sendError(
+                                                        exchange,
+                                                        "Token has been revoked",
+                                                        HttpStatus.UNAUTHORIZED);
                                 }
 
-                                // Step 8: Add user info to request headers
+                                // ==================================================
+                                // ROLE CHECK
+                                // ==================================================
+
+                                String requiredRole = config.getRequiredRole();
+
+                                if (StringUtils.hasText(requiredRole)
+                                                && !hasPermission(role, requiredRole)) {
+
+                                        return sendError(
+                                                        exchange,
+                                                        "Access Denied",
+                                                        HttpStatus.FORBIDDEN);
+                                }
+
+                                // ==================================================
+                                // FORWARD USER INFO
+                                // ==================================================
+
                                 ServerWebExchange modifiedExchange = exchange.mutate()
                                                 .request(builder -> builder
                                                                 .header("X-User-Email", email)
                                                                 .header("X-User-Role", role))
                                                 .build();
 
-                                // Step 9: Forward request
                                 return chain.filter(modifiedExchange);
 
-                        } catch (JwtException e) {
+                        } catch (JwtException ex) {
 
-                                // Invalid token / expired token / wrong signature
                                 return sendError(
                                                 exchange,
                                                 "Invalid or Expired Token",
@@ -117,31 +118,51 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                 };
         }
 
-        /**
-         * Role checking logic
-         */
-        private boolean hasPermission(String userRole, String requiredRole) {
+        private String extractToken(
+                        ServerWebExchange exchange) {
+
+                String authHeader = exchange.getRequest()
+                                .getHeaders()
+                                .getFirst(HttpHeaders.AUTHORIZATION);
+
+                if (!StringUtils.hasText(authHeader)) {
+                        return null;
+                }
+
+                if (!authHeader.startsWith("Bearer ")) {
+                        return null;
+                }
+
+                return authHeader.substring(7);
+        }
+
+        private Claims validateAndExtractClaims(
+                        String token) {
+
+                return Jwts.parserBuilder()
+                                .setSigningKey(signingKey)
+                                .build()
+                                .parseClaimsJws(token)
+                                .getBody();
+        }
+
+        private boolean hasPermission(
+                        String userRole,
+                        String requiredRole) {
 
                 if (userRole == null) {
                         return false;
                 }
 
-                // SYSTEM_ADMINISTRATOR can access everything
-                if (userRole.equalsIgnoreCase("SYSTEM_ADMINISTRATOR")) {
+                if ("SYSTEM_ADMINISTRATOR"
+                                .equalsIgnoreCase(userRole)) {
+
                         return true;
                 }
 
-                // USER can access USER endpoints
-                if (userRole.equalsIgnoreCase(requiredRole)) {
-                        return true;
-                }
-
-                return false;
+                return userRole.equalsIgnoreCase(requiredRole);
         }
 
-        /**
-         * Send JSON error response
-         */
         private Mono<Void> sendError(
                         ServerWebExchange exchange,
                         String message,
@@ -151,7 +172,8 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
 
                 response.setStatusCode(status);
 
-                response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+                response.getHeaders()
+                                .setContentType(MediaType.APPLICATION_JSON);
 
                 String body = """
                                 {
@@ -162,12 +184,10 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                 DataBuffer buffer = response.bufferFactory()
                                 .wrap(body.getBytes(StandardCharsets.UTF_8));
 
-                return response.writeWith(Mono.just(buffer));
+                return response.writeWith(
+                                Mono.just(buffer));
         }
 
-        /**
-         * Configuration class
-         */
         public static class Config {
 
                 private String requiredRole;
@@ -176,7 +196,9 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                         return requiredRole;
                 }
 
-                public void setRequiredRole(String requiredRole) {
+                public void setRequiredRole(
+                                String requiredRole) {
+
                         this.requiredRole = requiredRole;
                 }
         }
