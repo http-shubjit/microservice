@@ -20,7 +20,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1")
-@Tag(name = "Shared Budget API", description = "Endpoints accessible by both authenticated Users and Admins.")
+@Tag(name = "Recommendation", description = "Endpoints accessible by both authenticated Users and Admins.")
 public class RecomendController {
 
     @Autowired
@@ -29,7 +29,6 @@ public class RecomendController {
     private RecommendationService recommendationService;
 
     @PostMapping("/submit/record")
-    @Operation(summary = "Submit or Update budget metrics", description = "Saves financial details to database. Handles calculations dynamically based on permissions.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully processed budget data and updated database."),
             @ApiResponse(responseCode = "400", description = "Invalid request payload supplied."),

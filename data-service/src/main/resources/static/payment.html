@@ -1,195 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Razorpay Test Sandbox</title>
-
-    <style>
-        body {
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: #f8f9fa;
-            margin: 0;
-        }
-
-        .box {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 100%;
-        }
-
-        input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            font-family: monospace;
-        }
-
-        button {
-            padding: 10px 15px;
-            background: #3399cc;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 90%;
-            font-size: 15px;
-        }
-
-        button:hover {
-            background: #287ca7;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: sans-serif;
+      background: #f1f0e8;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 1rem;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e0dfd6;
+      border-radius: 12px;
+      padding: 1.25rem;
+      width: 100%;
+      max-width: 420px;
+      margin: auto;
+    }
+    h3 { margin: 0 0 2px; font-size: 16px; font-weight: 600; color: #1a1a18; }
+    .sub { font-size: 12px; color: #888780; margin: 0 0 1rem; }
+    .section-label {
+      font-size: 10px; font-weight: 600; color: #888780;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin: 10px 0 6px;
+    }
+    .field-row { margin-bottom: 7px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    label { display: block; font-size: 11px; color: #5f5e5a; margin-bottom: 3px; }
+    input, textarea {
+      width: 100%; padding: 7px 9px;
+      border: 1px solid #d3d1c7; border-radius: 5px;
+      font-size: 13px; font-family: inherit;
+      background: #fafaf8; color: #1a1a18; outline: none;
+    }
+    input:focus, textarea:focus {
+      border-color: #378add;
+      box-shadow: 0 0 0 2px rgba(55,138,221,0.12);
+    }
+    input.mono { font-family: monospace; font-size: 11px; }
+    textarea { resize: none; height: 56px; font-size: 12px; }
+    .divider { border: none; border-top: 1px solid #e0dfd6; margin: 10px 0; }
+    button {
+      width: 100%; padding: 10px;
+      background: #1d9e75; color: #fff;
+      border: none; border-radius: 6px;
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; margin-top: 6px;
+    }
+    button:hover    { background: #0f6e56; }
+    button:disabled { background: #9fd4c3; cursor: not-allowed; }
+    .status-bar {
+      margin-top: 8px; padding: 8px 10px;
+      border-radius: 5px; font-size: 12px; display: none;
+    }
+    .status-bar.show    { display: block; }
+    .status-bar.info    { background: #f1f0e8; border: 1px solid #e0dfd6; color: #5f5e5a; }
+    .status-bar.error   { background: #fcebeb; border: 1px solid #f09595; color: #a32d2d; }
+    .status-bar.success { background: #e1f5ee; border: 1px solid #5dcaa5; color: #0f6e56; }
+  </style>
 </head>
-
 <body>
 
-<div class="box">
+<div class="card">
+  <h3>Complete Your Order</h3>
+  <p class="sub">Fill in your details to confirm the order.</p>
 
-    <h3>Razorpay Payment Sandbox</h3>
+  <div class="section-label">Order Details</div>
 
-    <p>Paste the Razorpay Order ID:</p>
+  <div class="field-row">
+    <label for="order-id">Razorpay Order ID</label>
+    <input type="text" id="order-id" class="mono" placeholder="order_xxxxxxxxxxxxxx" />
+  </div>
 
-    <input
-        type="text"
-        id="orderId"
-        placeholder="order_xxxxxxxxxxxxxx">
-<input
-    type="email"
-    id="email"
-    placeholder="Enter your email">
-    <button id="pay-btn">  <br><br>
-        Open Payment Window
-    </button>
+  <div class="field-row">
+    <label for="jwt-token">JWT Token</label>
+    <input type="text" id="jwt-token" class="mono" placeholder="eyJhbGciOiJIUzI1NiJ9..." />
+  </div>
 
+  <div class="field-row">
+    <label for="email">Email</label>
+    <input type="email" id="email" placeholder="user@example.com" />
+  </div>
+
+  <div class="divider"></div>
+  <div class="section-label">Shipping Address</div>
+
+  <div class="two-col">
+    <div class="field-row">
+      <label for="full-name">Full Name</label>
+      <input type="text" id="full-name" placeholder="John Doe" />
+    </div>
+    <div class="field-row">
+      <label for="phone">Phone</label>
+      <input type="text" id="phone" placeholder="9999999999" />
+    </div>
+  </div>
+
+  <div class="field-row">
+    <label for="address">Address</label>
+    <textarea id="address" placeholder="House no, Street, Area"></textarea>
+  </div>
+
+  <div class="two-col">
+    <div class="field-row">
+      <label for="city">City</label>
+      <input type="text" id="city" placeholder="Mumbai" />
+    </div>
+    <div class="field-row">
+      <label for="pincode">Pincode</label>
+      <input type="text" id="pincode" placeholder="400001" />
+    </div>
+  </div>
+
+  <div class="divider"></div>
+  <button id="pay-btn" onclick="startPayment()">Proceed to Pay</button>
+  <div class="status-bar" id="status"></div>
 </div>
 
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
 <script>
+  function setStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = 'status-bar show ' + (type || 'info');
+  }
 
-document.getElementById("pay-btn").onclick = function (e) {
+  function startPayment() {
+    const orderId   = document.getElementById('order-id').value.trim();
+    const jwtToken  = document.getElementById('jwt-token').value.trim();
+    const email     = document.getElementById('email').value.trim();
+    const fullName  = document.getElementById('full-name').value.trim();
+    const phone     = document.getElementById('phone').value.trim();
+    const address   = document.getElementById('address').value.trim();
+    const city      = document.getElementById('city').value.trim();
+    const pincode   = document.getElementById('pincode').value.trim();
 
-    e.preventDefault();
+    if (!orderId)  { setStatus('Enter the Razorpay Order ID.', 'error'); return; }
+    if (!jwtToken) { setStatus('Enter your JWT token.', 'error'); return; }
+    if (!email)    { setStatus('Enter your email.', 'error'); return; }
+    if (!fullName) { setStatus('Enter your full name.', 'error'); return; }
+    if (!phone)    { setStatus('Enter your phone number.', 'error'); return; }
+    if (!address)  { setStatus('Enter your address.', 'error'); return; }
+    if (!city)     { setStatus('Enter your city.', 'error'); return; }
+    if (!pincode)  { setStatus('Enter your pincode.', 'error'); return; }
 
-    const orderId = document.getElementById("orderId").value.trim();
-const email = document.getElementById("email").value;
-
-    if (!orderId) {
-        alert("Please enter Razorpay Order ID");
-        return;
-    }
+    document.getElementById('pay-btn').disabled = true;
 
     const options = {
+      key:         'rzp_test_SyKFOG7Dsvus9g',
+      order_id:    orderId,
+      currency:    'INR',
+      name:        'Data Service',
+      description: 'Order Payment',
+      prefill:     { name: fullName, email: email, contact: phone },
+      theme:       { color: '#3399cc' },
 
-        key: "rzp_test_SyKFOG7Dsvus9g",
+      handler: function(response) {
+        setStatus('Verifying payment…', 'info');
 
-        order_id: orderId,
+        fetch('/api/v1/checkout/buy', {
+          method: 'POST',
+          headers: {
+            'Content-Type':  'application/json',
+            'X-User-Email':  email,
+            'Authorization': 'Bearer ' + jwtToken
+          },
+          body: JSON.stringify({
+            razorpayOrderId:   response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+            fullName:          fullName,
+            phone:             phone,
+            address:           address,
+            city:              city,
+            pincode:           pincode
+          })
+        })
+        .then(r => r.ok ? r.text() : r.text().then(t => Promise.reject(t)))
+        .then(msg => {
+          setStatus('✓ ' + msg, 'success');
+          document.getElementById('pay-btn').style.display = 'none';
+        })
+        .catch(err => {
+          setStatus('Verification failed: ' + err, 'error');
+          document.getElementById('pay-btn').disabled = false;
+        });
+      },
 
-        currency: "INR",
-
-        name: "Data Service Sandbox",
-
-        description: "Checkout Test",
-
-        prefill: {
-            name: "Test User",
-            email: "testuser@gmail.com",
-            contact: "9999999999"
-        },
-
-        theme: {
-            color: "#3399cc"
-        },
-
-        handler: function (response) {
-
-            fetch("http://localhost:8080/api/v1/checkout/verify", {
-
-                method: "POST",
-
-                headers: {
-                    "Content-Type": "application/json",
-
-                    // MUST MATCH THE EMAIL USED DURING /initiate
-                    "X-User-Email": email
-                },
-
-                body: JSON.stringify({
-
-                    razorpayOrderId: response.razorpay_order_id,
-
-                    razorpayPaymentId: response.razorpay_payment_id,
-
-                    razorpaySignature: response.razorpay_signature
-
-                })
-
-            })
-            .then(response => {
-
-                if (!response.ok) {
-                    throw new Error("Verification failed");
-                }
-
-                return response.text();
-
-            })
-            .then(result => {
-
-                alert(result);
-
-            })
-            .catch(error => {
-
-                console.error(error);
-
-                alert(error.message);
-
-            });
-
-        },
-
-        modal: {
-
-            ondismiss: function () {
-
-                fetch(
-                    "http://localhost:8080/api/v1/checkout/fail?razorpayOrderId=" + orderId,
-                    {
-                        method: "POST"
-                    }
-                )
-                .then(() => {
-
-                    alert("Payment cancelled.");
-
-                });
-
-            }
-
+      modal: {
+        ondismiss: function() {
+          setStatus('Payment cancelled. You can try again.', 'info');
+          document.getElementById('pay-btn').disabled = false;
+          fetch('/api/v1/checkout/fail?razorpayOrderId=' + orderId, { method: 'POST' });
         }
-
+      }
     };
 
-    const razorpay = new Razorpay(options);
-
-    razorpay.open();
-
-};
-
+    new Razorpay(options).open();
+  }
 </script>
 
 </body>
