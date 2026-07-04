@@ -26,7 +26,8 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
 
         @Value("${app.jwt.secret}")
         private String jwtSecret;
-
+        @Value("${app.internal.secret}")
+        private String internalSecret;
         private Key signingKey;
 
         private final TokenBlacklistService tokenBlacklistService;
@@ -103,7 +104,8 @@ public class AuthFilter extends AbstractGatewayFilterFactory<AuthFilter.Config> 
                                 ServerWebExchange modifiedExchange = exchange.mutate()
                                                 .request(builder -> builder
                                                                 .header("X-User-Email", email)
-                                                                .header("X-User-Role", role))
+                                                                .header("X-User-Role", role)
+                                                                .header("X-Internal-Secret", internalSecret))
                                                 .build();
 
                                 return chain.filter(modifiedExchange);
