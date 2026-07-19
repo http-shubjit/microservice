@@ -1,24 +1,24 @@
-package example.data.service;
+// package example.data.service;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+// import org.springframework.boot.web.servlet.FilterRegistrationBean;
+// import org.springframework.context.annotation.Bean;
+// import org.springframework.context.annotation.Configuration;
 
-@Configuration
-public class FilterConfig {
+// @Configuration
+// public class FilterConfig {
 
-    @Bean
-    public FilterRegistrationBean<InternalGatewayFilter> gatewayFilter(
-            InternalGatewayFilter filter) {
+//     @Bean
+//     public FilterRegistrationBean<InternalGatewayFilter> gatewayFilter(
+//             InternalGatewayFilter filter) {
 
-        FilterRegistrationBean<InternalGatewayFilter> bean = new FilterRegistrationBean<>();
+//         FilterRegistrationBean<InternalGatewayFilter> bean = new FilterRegistrationBean<>();
 
-        bean.setFilter(filter);
+//         bean.setFilter(filter);
 
-        bean.addUrlPatterns("/api/*");
+//         bean.addUrlPatterns("/api/*");
 
-        bean.setOrder(1);
+//         bean.setOrder(1);
 
-        return bean;
-    }
-}
+//         return bean;
+//     }
+// }

@@ -22,19 +22,12 @@ public class JwtUtil {
     private long expirationMs;
 
     public String generateToken(User user) {
-
         return Jwts.builder()
-                .setId(UUID.randomUUID().toString())
-                .claim("email", user.getEmail())
-                .claim("role", user.getRole().name())
+                .setId(UUID.randomUUID().toString())//it's called jti used for more safety and unique identifier for the token
+                .setSubject(user.getEmail()) // standard 'sub' claim (Spring uses this as the Principal)
                 .setIssuedAt(new Date())
-                .setExpiration(
-                        new Date(
-                                System.currentTimeMillis()
-                                        + expirationMs))
-                .signWith(
-                        getSigningKey(),
-                        SignatureAlgorithm.HS256)
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMs))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 

@@ -42,7 +42,7 @@ public class CheckoutService {
         List<CartItem> cartItems = cartRepository.findByUserEmail(email);
 
         if (cartItems == null || cartItems.isEmpty()) {
-            throw new RuntimeException("Cart is empty for user: " + email);
+            return Map.of("error", "Cart is empty. Cannot create order.");
         }
 
         long totalInPaise = 0;

@@ -1,24 +1,27 @@
 package example.api_gateway;
 
-import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Mono;
 
 @Service
 public class TokenBlacklistService {
 
-    private final StringRedisTemplate redisTemplate;
+    private final ReactiveStringRedisTemplate reactiveRedisTemplate;
     private static final String PREFIX = "blacklist:";
 
-    // Constructor-based injection
-    public TokenBlacklistService(StringRedisTemplate redisTemplate) {
-        this.redisTemplate = redisTemplate;
+    public TokenBlacklistService(ReactiveStringRedisTemplate reactiveRedisTemplate) {
+        this.reactiveRedisTemplate = reactiveRedisTemplate;
     }
 
-    public boolean isBlacklisted(String jti) {
+    /**
+     * Checks if a token ID (jti) exists in Redis.
+     * Returns a Mono (Reactive Boolean) so it doesn't block the server thread.
+     */
+    public Mono<Boolean> isBlacklisted(String jti) {
         if (jti == null) {
-            return false;
+            return Mono.just(false);
         }
-        return Boolean.TRUE.equals(
-                redisTemplate.hasKey(PREFIX + jti));
+        return reactiveRedisTemplate.hasKey(PREFIX + jti);
     }
 }

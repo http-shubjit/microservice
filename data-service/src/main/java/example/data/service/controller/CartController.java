@@ -5,7 +5,6 @@ import org.springframework.web.bind.annotation.*;
 
 
 import example.data.service.dto.AddToCartRequest;
-import example.data.service.dto.Product;
 import example.data.service.entity.CartItem;
 import example.data.service.service.CartService;
 import io.swagger.v3.oas.annotations.Parameter;

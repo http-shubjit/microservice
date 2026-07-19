@@ -17,4 +17,6 @@ public class RegisterRequest {
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
 @Schema(example = "") 
-    private String role;}
+private String role;
+
+}

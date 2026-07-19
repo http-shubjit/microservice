@@ -1,5 +1,6 @@
 package example.auth.server;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -10,11 +11,15 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
-@RequiredArgsConstructor
 @Tag(name = "Auth", description = "Login and registration endpoints")
 public class AuthController {
 
-    private final AuthService authService;
+        private final AuthService authService;
+    
+        public AuthController(AuthService authService) {
+        
+            this.authService = authService;
+        }
 
     @SecurityRequirements
     @Operation(summary = "Register a new user", description = "Creates account and returns JWT token")
@@ -48,26 +53,28 @@ public class AuthController {
         }
     }
 
+    @Operation(summary = "Logout", description = "Invalidates the JWT token")
     @PostMapping("/logout")
     public ResponseEntity<AuthResponse<?>> logout(
-            @RequestHeader("Authorization") String authorizationHeader) {
+                    @RequestHeader(value = "Authorization", required = false) String authHeader) {
 
-        if (!authorizationHeader.startsWith("Bearer ")) {
+            if (authHeader == null || authHeader.isBlank()) {
+                    return ResponseEntity.badRequest()
+                                    .body(AuthResponse.error("Missing Authorization Header"));
+            }
 
-            return ResponseEntity.badRequest()
-                    .body(
-                            AuthResponse.error(
-                                    "Invalid Authorization Header"));
-        }
+           
+            String token = authHeader.startsWith("Bearer ")
+                            ? authHeader.substring(7)
+                            : authHeader;
 
-        String token = authorizationHeader.substring(7);
+            authService.logout(token);
 
-        authService.logout(token);
-
-        return ResponseEntity.ok(
-                AuthResponse.success(
-                        "Logout successful"));
+            return ResponseEntity.ok(
+                            AuthResponse.success("Logout successful"));
     }
+
+
     @SecurityRequirements
     @Operation(summary = "Health check")
     @GetMapping("/health")

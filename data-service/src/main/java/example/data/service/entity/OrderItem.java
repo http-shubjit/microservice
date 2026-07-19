@@ -17,7 +17,7 @@ public class OrderItem {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false, referencedColumnName = "order_id")
+    @JoinColumn(name = "order_id", nullable = false, referencedColumnName = "order_id")//here the name = "order_id" referes to column name of order item which refer to the primary key of order table which is also order_id
     @ToString.Exclude
     private Order order;
 
